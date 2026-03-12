@@ -19,13 +19,6 @@ const InternalDashboard = () => {
 
   const [order, setOrder] = useState([])
 
-  // const orders = [
-  //   { id: 1, customer: "Anil Kumar", billNo: "PM-8829", items: 2, time: 5, status: "billed", elapsedMinutes: 3, assignedTo: "Suresh M." },
-  //   { id: 3, customer: "Rahul Sharma", billNo: "PM-8831", items: 4, time: 1, status: "verifying", elapsedMinutes: 4, assignedTo: "Priya V." },
-  //   { id: 2, customer: "Saira Banu", billNo: "PM-8830", items: 10, time: 0, status: "picking", elapsedMinutes: 8, assignedTo: "Rahul K." },
-  //   { id: 4, customer: "Jessica Doe", billNo: "PM-8832", items: 12, time: 15, status: "collect", elapsedMinutes: 12, assignedTo: "Amit S." },
-  // ];
-
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -33,8 +26,6 @@ const InternalDashboard = () => {
         const res = await axios.get(`${api}/order/live-feed`)
 
         setOrder(res.data.orders)
-        // console.log(res.data)
-        // console.log(res.data.orders)
         console.log(res.data.orders.status)
       }
       catch (err) {
@@ -140,7 +131,7 @@ const InternalDashboard = () => {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-slate-100 text-slate-500 rounded-lg">
+                          <div className="p-2 bg-green-400 text-white rounded-lg">
                             <FontAwesomeIcon icon={faFileInvoice} />
                           </div>
                           <div>
