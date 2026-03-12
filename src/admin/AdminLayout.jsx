@@ -165,6 +165,9 @@ const AdminLayout = () => {
           onConfirm={() => {
             console.log("Logging out...");
             // Perform logout logic here (e.g., clear localStorage)
+            localStorage.removeItem("userRole")
+            localStorage.removeItem("userName")
+            localStorage.removeItem("authToken")
             navigate('/'); 
             setIsLogoutOpen(false);
           }}
