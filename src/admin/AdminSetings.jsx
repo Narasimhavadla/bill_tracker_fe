@@ -11,6 +11,7 @@ import axios from "axios";
 
 import AddEmployeeModal from "./AdminComponents/AddEmployee";
 import EmpDelete from "./AdminComponents/EmpDelModal";
+import EditEmployeeModal from "./AdminComponents/EmpUpdateModal";
 
 
 // Toggle Switch Component
@@ -38,6 +39,20 @@ const Settings = () => {
   const [showEmpDel, setShowEmpDel] = useState(false);
   const [selectEmpId,setSelectEmpId] = useState(null)
 
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+
+  const handleUpdateEmployee = (updatedEmp) => {
+  setEmployees((prev) =>
+    prev.map((emp) => (emp.id === updatedEmp.id ? {
+      ...updatedEmp,
+      canPick: updatedEmp.canPick === '1' || updatedEmp.canPick === 1 || updatedEmp.canPick === true,
+      canVerify: updatedEmp.canVerify === '1' || updatedEmp.canVerify === 1 || updatedEmp.canVerify === true,
+    } : emp))
+  );
+};
 
     const fetchEmployees = async () => {
       try {
@@ -276,12 +291,17 @@ const Settings = () => {
 
 
                 {/* Actions */}
-                <td className="text-center space-x-4">
+                <td className="text-center space-x-2">
 
-                  <FontAwesomeIcon
-                    icon={faPen}
-                    className="text-blue-500 cursor-pointer"
-                  />
+                  {/* Inside filteredEmployees.map Actions column */}
+                <FontAwesomeIcon
+                  icon={faPen}
+                  className="text-slate-800 cursor-pointer"
+                  onClick={() => {
+                    setSelectedEmployee(emp);
+                    setShowEditModal(true);
+                  }}
+                />
 
                   <FontAwesomeIcon
                     icon={faTrash}
@@ -327,6 +347,13 @@ const Settings = () => {
             refresh = {fetchEmployees}
           />
       )}
+
+      <EditEmployeeModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        employee={selectedEmployee}
+        onUpdate={handleUpdateEmployee}
+      />
 
     </div>
 

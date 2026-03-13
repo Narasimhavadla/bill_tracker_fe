@@ -6,7 +6,8 @@ import {
   faBoxOpen, faCheckCircle, faUserShield, faClock,
   faExclamationTriangle,
   faEye,
-  faEyeSlash
+  faEyeSlash,
+  faMicrophone
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
@@ -15,6 +16,7 @@ const InternalDashboard = () => {
 
   const api = import.meta.env.VITE_API_BASE_URL
   const [visibleRows, setVisibleRows] = useState({});
+  const [isAudible, setIsAudible] = useState({});
 
 
   const [order, setOrder] = useState([])
@@ -94,12 +96,54 @@ const InternalDashboard = () => {
     }
   };
 
-  const toggleEye = (id) => {
-    setVisibleRows(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
+const toggleEye = async (billNum) => {
+  try {
+
+    const res = await axios.patch(`${api}/order/toggle-hide/${billNum}`)
+
+    const updatedHidden = res.data.order.isHidden
+
+    setOrder(prev =>
+      prev.map(o =>
+        o.billNum === billNum ? { ...o, isHidden: updatedHidden } : o
+      )
+    )
+
+  } catch (err) {
+    console.log(err)
+  }
+};
+
+const formatToMinutesOnly = (totalSeconds) => {
+  if (!totalSeconds && totalSeconds !== 0) return "0";
+  const minutes = Math.floor(totalSeconds /60);
+  return `${minutes}`;
+};
+
+const getMinutesAgo = (timestamp) => {
+  if (!timestamp) return "0";
+  const now = new Date();
+  const past = new Date(timestamp);
+  const diffInMs = now - past;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  return diffInMinutes > 0 ? diffInMinutes : 0;
+};
+
+
+const playAnnouncement = (customerName) => {
+  // Cancel any ongoing speech to avoid overlapping
+  window.speechSynthesis.cancel();
+
+  const message = `Hello ${customerName}, your order is completed. Please collect.`;
+  const utterance = new SpeechSynthesisUtterance(message);
+  
+  // Optional: Professional settings
+  utterance.rate = 0.9; 
+  utterance.pitch = 1; 
+  utterance.volume = 1;
+
+  window.speechSynthesis.speak(utterance);
+};
 
   return (
     <div className="bg-slate-50 min-h-screen flex flex-col">
@@ -124,12 +168,12 @@ const InternalDashboard = () => {
               <tbody className="divide-y divide-slate-100">
                 {sortedOrders.map((order) => {
 
-                  const isDelayed = order.elapsedMinutes > 5;
+                  const isDelayed = order.liveTotalElapsedSecs > 5;
 
                   return (
-                    <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={order.id} className={`hover:bg-slate-50/80 transition-colors ${order.isHidden ? "opacity-40" : ""}`}>
 
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 ">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-green-400 text-white rounded-lg">
                             <FontAwesomeIcon icon={faFileInvoice} />
@@ -157,7 +201,7 @@ const InternalDashboard = () => {
                               className={isDelayed ? "animate-pulse" : ""}
                             />
                             {/* <span>{order.elapsedMinutes} min</span> */}
-                            <span>- min</span>
+                            <span> {getMinutesAgo(order.billedAt)} min</span>
                           </div>
 
                           {isDelayed && (
@@ -173,21 +217,51 @@ const InternalDashboard = () => {
                           <FontAwesomeIcon icon={faUserShield} className="text-slate-400 text-xs" />
                           <span className="text-sm font-semibold">
                             {/* {order.time} min ago by {order.assignedTo} */}
-                            - min ago by {order.assignedTo}
+                             {formatToMinutesOnly(order.liveTotalElapsedSecs)} min ago by {order.pickerName}
+                            {/* {getMinutesAgo(order.verifiedAt)} min ago by {order.verifierName} */}
                           </span>
                         </div>
                       </td>
-                      <td className="text-center text-sm relative group">
-                        <FontAwesomeIcon
-                          icon={visibleRows[order.id] ? faEyeSlash : faEye}
-                          className="cursor-pointer text-slate-600 hover:text-slate-900"
-                          onClick={() => toggleEye(order.id)}
-                        />
+                     <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-4">
+                        
+                        {/* Details Toggle (Always Visible) */}
+                        <div className="relative group flex items-center justify-center">
+                          <FontAwesomeIcon
+                            icon={order.isHidden ? faEyeSlash : faEye}
+                            className={`cursor-pointer transition-colors ${
+                              // visibleRows[order.id] ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-900'
+                            order.isHidden ? 'text-red-500' : 'text-emerald-600'
+                            }`}
+                            onClick={() => toggleEye(order.billNum, order.id)}
+                          />
+                          <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-sm">
+                            {visibleRows[order.id] ? "Click to show details" : "Click to hide details"}
+                          </span>
+                        </div>
 
-                        <span className="absolute left-1/2 -translate-x-1/2 top-11 whitespace-nowrap bg-gray-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-60 transition">
-                          {visibleRows[order.id] ? "Click to show details" : "Click to hide details"}
-                        </span>
-                      </td>
+                        {/* Collect Audio Action (Conditional) */}
+                        {order.status === 'collect' && (
+                          <div className="relative group flex items-center justify-center">
+                            <button 
+                              onClick={() => playAnnouncement(order.customerName)}
+                              className="focus:outline-none focus:ring-2 focus:ring-emerald-200 rounded-full p-1 transition-all"
+                            >
+                              <FontAwesomeIcon 
+                                icon={faMicrophone} 
+                                className="cursor-pointer text-emerald-500 hover:text-emerald-700 transition-all hover:scale-125 active:scale-95"
+                              />
+                            </button>
+                            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                              Click to play collect order
+                            </span>
+                          </div>
+                        )}
+
+                      </div>
+                    </td>
+
+
                       <td className="px-6 py-4">
                         <div className="flex justify-center">
                           {(() => {

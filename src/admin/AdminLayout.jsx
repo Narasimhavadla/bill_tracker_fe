@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faBars, faTimes, faUsers, 
-  faClipboardList, faSignOutAlt, faChartLine, 
-  faIdBadge, faCheck, faGear,
-  faBoxesPacking, faChartSimple, faCheckDouble, faMoneyBill,
-  faBarcode
+  faBars, faTimes,
+  faClipboardList, faSignOutAlt, faChartLine, faGear,
+  faBoxesPacking, faChartSimple, faCheckDouble,
+  faBarcode,
+  faClipboardCheck
 } from '@fortawesome/free-solid-svg-icons';
 
 // Components
@@ -20,6 +20,7 @@ import EmployeePerformance from './AdminEmpAnalytics';
 import AdminBilling from './AdminBilling';
 import LogoutModal from './AdminComponents/logoutModal';
 import BillStatusOverview from './AdminInvoiceOverview';
+import AdminCollection from './AdminCollection';
 
 
 
@@ -49,6 +50,7 @@ const AdminLayout = () => {
     // { id: 'billing', label: 'Billing', icon: faMoneyBill, permission: 'canBill' },
     { id: 'picking', label: 'Picking', icon: faBoxesPacking, permission: 'canPick' },
     { id: 'Verifying', label: 'verifying', icon: faCheckDouble, permission: 'canVerify' },
+    { id: 'collection', label: 'Collect order', icon: faClipboardCheck, permission: 'canVerify' },
     { id: 'EmployeeAnalytics', label: 'Emp Analytics', icon: faChartSimple, permission: 'canViewEmpAnalytics' },
     { id: 'MasterBill', label: 'Invoice Overview', icon: faBarcode, permission: 'isAdmin' },
     { id: 'Settings', label: 'settings', icon: faGear, permission: 'isAdmin' },
@@ -80,6 +82,7 @@ const AdminLayout = () => {
       case 'picking': return <AdminPicking />;
       // case 'billing': return <AdminBilling />;
       case 'Verifying': return <Verifying />;
+      case 'collection': return <AdminCollection />;
       case 'Settings': return <Settings />;
       case 'analytics': return <AdminAnalytics />;
       case 'MasterBill': return <BillStatusOverview />;

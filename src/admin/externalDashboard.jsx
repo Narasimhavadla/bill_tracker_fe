@@ -1,19 +1,36 @@
 import React from 'react';
+import { useState,useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faFileInvoice, faTruckLoading, 
-  faClipboardCheck, faBoxOpen, faCheckCircle 
+  faClipboardCheck, faBoxOpen, faCheckCircle, 
+  faTriangleExclamation
 } from '@fortawesome/free-solid-svg-icons';
 import Logo from "../assets/MediSys_LOGO.jpg"
+import axios from 'axios';
 
 const ExternalDashboard = () => {
 
-  const orders = [
-    { id: 1, customer: "Anil Kumar", mobile: "9876541210", billNo: "PM-8829", time:5, items: ["Amoxicillin", "Paracetamol"], status: "Billed" },
-    { id: 2, customer: "Saira Banu", mobile: "9844012345", billNo: "PM-8830", time:4, items: ["Insulin Pen", "Alcohol Swabs"], status: "Picking" },
-    { id: 3, customer: "Rahul Sharma", mobile: "9900188776", billNo: "PM-8831", time:15, items: ["Vitamin C", "Zinc Tabs"], status: "Checking" },
-    { id: 4, customer: "Jessica Doe", mobile: "9000011122", billNo: "PM-8832", time:8, items: ["First Aid Kit"], status: "Collect Order" },
-  ];
+ const api = import.meta.env.VITE_API_BASE_URL
+
+  
+    const [order, setOrder] = useState([])
+  
+      useEffect(() => {
+        const fetchOrders = async () => {
+          try {
+            const res = await axios.get(`${api}/order/live-feed`)
+    
+            setOrder(res.data.orders)
+            console.log(res.data.orders.status)
+          }
+          catch (err) {
+            console.log(err)
+          }
+        }
+    
+        fetchOrders()
+      }, [])
 
   // status priority
   const statusPriority = {
@@ -24,7 +41,9 @@ const ExternalDashboard = () => {
   };
 
   // sorted orders
-  const sortedOrders = [...orders].sort(
+ const sortedOrders = [...order]
+  .filter(o => !o.isHidden)
+  .sort(
     (a, b) => statusPriority[a.status] - statusPriority[b.status]
   );
 
@@ -37,10 +56,10 @@ const ExternalDashboard = () => {
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'Billed': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Picking': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'Checking': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'Collect Order': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'billed': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'picking': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'checking': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'collect': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
@@ -88,7 +107,7 @@ const ExternalDashboard = () => {
 
                 {sortedOrders.map((order) => (
 
-                  <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={order.id} className={`hover:bg-slate-50/80 transition-colors `}>
 
                     <td className="px-6 py-1">
                       <div className="flex items-center gap-3">
@@ -96,13 +115,13 @@ const ExternalDashboard = () => {
                           <FontAwesomeIcon icon={faFileInvoice} />
                         </div>
                         <span className="font-bold text-slate-700">
-                          {order.billNo}
+                          {order.billNum}
                         </span>
                       </div>
                     </td>
 
-                    <td className="px-6 py-1 font-medium text-slate-900">
-                      {order.customer}
+                    <td className="px-6 py-1 font-medium text-slate-900 text-center">
+                      {order.customerName}
                     </td>
 
                     <td className="px-6 py-1 text-sm text-slate-600 font-mono">
@@ -111,13 +130,20 @@ const ExternalDashboard = () => {
 
                     <td className="px-6 py-1 text-center">
                       <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded text-xs font-bold">
-                        {order.items.length} Units
+                        {order.itemsCount} Units
                       </span>
                     </td>
 
                     <td className="px-6 py-1 text-sm text-slate-600 font-semibold text-center">
-                      <span className={`${order.time >= 15 ? "bg-red-200 text-red-500 px-3 py-1 rounded-xl" : ""}`}>
-                        {order.time >= 15 ? "Contact Help Desk" : order.time + " min"}
+                      <span className={`${order.liveTotalElapsedSecs >= 15 ? "bg-red-200 text-red-500 px-3 py-1 rounded-xl" : ""}`}>
+                        {order.liveTotalElapsedSecs >= 15 ? (
+                          <>
+                            <FontAwesomeIcon icon={faTriangleExclamation} className="mr-2" />
+                            Contact Help Desk
+                          </>
+                        ) : (
+                          order.liveTotalElapsedSecs + " min"
+                        )}
                       </span>
                     </td>
 
@@ -125,10 +151,10 @@ const ExternalDashboard = () => {
                       <div className="flex justify-center">
                         <span className={`w-36 justify-center px-4 py-1.5 rounded-full text-[11px] font-bold border ${getStatusStyle(order.status)} flex items-center gap-2 uppercase`}>
 
-                          {order.status === 'Billed' && <FontAwesomeIcon icon={faCheckCircle} />}
-                          {order.status === 'Picking' && <FontAwesomeIcon icon={faTruckLoading} />}
-                          {order.status === 'Checking' && <FontAwesomeIcon icon={faClipboardCheck} />}
-                          {order.status === 'Collect Order' && <FontAwesomeIcon icon={faBoxOpen} />}
+                          {order.status === 'billed' && <FontAwesomeIcon icon={faCheckCircle} />}
+                          {order.status === 'picking' && <FontAwesomeIcon icon={faTruckLoading} />}
+                          {order.status === 'checking' && <FontAwesomeIcon icon={faClipboardCheck} />}
+                          {order.status === 'collect' && <FontAwesomeIcon icon={faBoxOpen} />}
 
                           {order.status}
 
