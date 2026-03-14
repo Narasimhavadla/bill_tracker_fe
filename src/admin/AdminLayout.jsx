@@ -17,7 +17,7 @@ import Verifying from './AdminVerifying';
 import Settings from './AdminSetings';
 import AdminAnalytics from './AdminAnalytics';
 import EmployeePerformance from './AdminEmpAnalytics';
-import AdminBilling from './AdminBilling';
+// import AdminBilling from './AdminBilling';
 import LogoutModal from './AdminComponents/logoutModal';
 import BillStatusOverview from './AdminInvoiceOverview';
 import AdminCollection from './AdminCollection';
@@ -117,7 +117,7 @@ const AdminLayout = () => {
 
       {/* --- SIDEBAR --- */}
       <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-20 bg-[#81181C] flex items-center px-6 text-white justify-between">
+        <div className=" h-20 bg-[#81181C] flex items-center px-6 text-white justify-between">
           <span className="font-bold text-lg tracking-tight">MediSYS Menu</span>
           <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-white/10 rounded-full">
             <FontAwesomeIcon icon={faTimes} />

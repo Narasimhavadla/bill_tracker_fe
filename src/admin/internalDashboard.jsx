@@ -7,28 +7,28 @@ import {
   faExclamationTriangle,
   faEye,
   faEyeSlash,
-  faMicrophone
+  faMicrophone,
+  faCheckDouble
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
+import { motion } from "framer-motion"; // ✅ animation library
+
 const InternalDashboard = () => {
 
-
   const api = import.meta.env.VITE_API_BASE_URL
+
   const [visibleRows, setVisibleRows] = useState({});
   const [isAudible, setIsAudible] = useState({});
-
-
   const [order, setOrder] = useState([])
-
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await axios.get(`${api}/order/live-feed`)
 
+        const res = await axios.get(`${api}/order/live-feed`)
         setOrder(res.data.orders)
-        console.log(res.data.orders.status)
+
       }
       catch (err) {
         console.log(err)
@@ -36,8 +36,8 @@ const InternalDashboard = () => {
     }
 
     fetchOrders()
-  }, [])
 
+  }, [])
 
   const statusPriority = {
     "collect": 1,
@@ -46,7 +46,6 @@ const InternalDashboard = () => {
     "billed": 4
   };
 
-  // Sort orders based on status priority
   const sortedOrders = [...order].sort(
     (a, b) => statusPriority[a.status] - statusPriority[b.status]
   );
@@ -96,61 +95,114 @@ const InternalDashboard = () => {
     }
   };
 
-const toggleEye = async (billNum) => {
-  try {
+  const handleCompleteOrder = async (billNum) => {
+    try {
 
-    const res = await axios.patch(`${api}/order/toggle-hide/${billNum}`)
+      const res = await axios.patch(`${api}/order/complete/${billNum}`);
 
-    const updatedHidden = res.data.order.isHidden
+      if (res.status === 200) {
 
-    setOrder(prev =>
-      prev.map(o =>
-        o.billNum === billNum ? { ...o, isHidden: updatedHidden } : o
+        // remove order from list (since it is completed)
+        setOrder(prev => prev.filter(o => o.billNum !== billNum));
+
+        console.log(`Order ${billNum} completed`);
+
+      }
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const toggleEye = async (billNum) => {
+    try {
+
+      const res = await axios.patch(`${api}/order/toggle-hide/${billNum}`)
+      const updatedHidden = res.data.order.isHidden
+
+      setOrder(prev =>
+        prev.map(o =>
+          o.billNum === billNum ? { ...o, isHidden: updatedHidden } : o
+        )
       )
-    )
 
-  } catch (err) {
-    console.log(err)
-  }
-};
+    } catch (err) {
+      console.log(err)
+    }
+  };
 
-const formatToMinutesOnly = (totalSeconds) => {
-  if (!totalSeconds && totalSeconds !== 0) return "0";
-  const minutes = Math.floor(totalSeconds /60);
-  return `${minutes}`;
-};
+  const formatToMinutesOnly = (totalSeconds) => {
+    if (!totalSeconds && totalSeconds !== 0) return "0";
+    const minutes = Math.floor(totalSeconds / 60);
+    return `${minutes}`;
+  };
 
-const getMinutesAgo = (timestamp) => {
-  if (!timestamp) return "0";
-  const now = new Date();
-  const past = new Date(timestamp);
-  const diffInMs = now - past;
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  return diffInMinutes > 0 ? diffInMinutes : 0;
-};
+  const getMinutesAgo = (timestamp) => {
+    if (!timestamp) return "0";
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInMs = now - past;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    return diffInMinutes > 0 ? diffInMinutes : 0;
+  };
 
+  const playAnnouncement = (customerName) => {
 
-const playAnnouncement = (customerName) => {
-  // Cancel any ongoing speech to avoid overlapping
-  window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
 
-  const message = `Hello ${customerName}, your order is completed. Please collect.`;
-  const utterance = new SpeechSynthesisUtterance(message);
-  
-  // Optional: Professional settings
-  utterance.rate = 0.9; 
-  utterance.pitch = 1; 
-  utterance.volume = 1;
+    const message = `Hello ${customerName}, your order is completed. Please collect.`;
 
-  window.speechSynthesis.speak(utterance);
-};
+    const utterance = new SpeechSynthesisUtterance(message);
+
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const getAssignedDisplay = (order) => {
+    switch (order.status) {
+      case "billed":
+        return {
+          text: "Billed",
+          icon: faFileInvoice
+        };
+
+      case "picking":
+        return {
+          text: `Picking Started`,
+          icon: faTruckLoading
+        };
+
+      case "verifying":
+        return {
+          text: `picked by ${order.pickerName} ` || "Picker",
+          icon: faTruckLoading
+        };
+
+      case "collect":
+        return {
+          text: `verified by ${order.verifierName}` || "Verifier",
+          icon: faClipboardCheck
+        };
+
+      default:
+        return {
+          text: "-",
+          icon: faUserShield
+        };
+    }
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen flex flex-col">
 
       <div className="max-w-7xl mx-auto px-4 py-8 w-full">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+
           <div className="overflow-x-auto">
+
             <table className="w-full text-left border-collapse">
 
               <thead>
@@ -160,18 +212,26 @@ const playAnnouncement = (customerName) => {
                   <th className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-wider">Mobile</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-wider text-center">Time Elapsed</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-wider">Assigned To</th>
-                  <th className=" py-4 text-xs font-bold text-slate-800 uppercase tracking-wider">Action</th>
+                  <th className="py-4 text-xs font-bold text-slate-800 uppercase tracking-wider">Action</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-wider text-center">Status</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              {/* ✅ Motion tbody for layout animation */}
+              <motion.tbody layout className="divide-y divide-slate-100">
+
                 {sortedOrders.map((order) => {
 
-                  const isDelayed = order.liveTotalElapsedSecs > 5;
+                  const isDelayed = order.liveTotalElapsedSecs > 300;
 
                   return (
-                    <tr key={order.id} className={`hover:bg-slate-50/80 transition-colors ${order.isHidden ? "opacity-40" : ""}`}>
+
+                    <motion.tr
+                      key={order.id}
+                      layout
+                      transition={{ duration: 0.45, ease: "easeInOut" }}
+                      className={`hover:bg-slate-50/80 transition-colors ${order.isHidden ? "opacity-40" : ""}`}
+                    >
 
                       <td className="px-6 py-4 ">
                         <div className="flex items-center gap-3">
@@ -194,108 +254,180 @@ const playAnnouncement = (customerName) => {
                       </td>
 
                       <td className="px-6 py-4 text-center">
+
                         <div className="flex flex-col items-center">
+
                           <div className={`flex items-center gap-2 font-mono font-bold ${isDelayed ? 'text-red-600' : 'text-slate-600'}`}>
+
                             <FontAwesomeIcon
                               icon={isDelayed ? faExclamationTriangle : faClock}
                               className={isDelayed ? "animate-pulse" : ""}
                             />
-                            {/* <span>{order.elapsedMinutes} min</span> */}
-                            <span> {getMinutesAgo(order.billedAt)} min</span>
+
+                            <span>{getMinutesAgo(order.billedAt)} min</span>
+
                           </div>
 
                           {isDelayed && (
+
                             <span className="text-[9px] text-red-500 font-bold uppercase mt-1">
                               Longer Than Expected
                             </span>
+
                           )}
+
                         </div>
+
                       </td>
 
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-slate-600">
-                          <FontAwesomeIcon icon={faUserShield} className="text-slate-400 text-xs" />
-                          <span className="text-sm font-semibold">
-                            {/* {order.time} min ago by {order.assignedTo} */}
-                             {formatToMinutesOnly(order.liveTotalElapsedSecs)} min ago by {order.pickerName}
-                            {/* {getMinutesAgo(order.verifiedAt)} min ago by {order.verifierName} */}
-                          </span>
-                        </div>
+
+                        {(() => {
+
+                          const assigned = getAssignedDisplay(order);
+
+                          return (
+
+                            <div className="flex items-center gap-2 text-slate-600">
+
+                              <FontAwesomeIcon
+                                icon={assigned.icon}
+                                className="text-slate-400 text-xs"
+                              />
+
+                              <span className="text-sm font-semibold">
+                                {assigned.text}
+                              </span>
+
+                            </div>
+
+                          );
+
+                        })()}
+
                       </td>
-                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-4">
-                        
-                        {/* Details Toggle (Always Visible) */}
-                        <div className="relative group flex items-center justify-center">
+
+                      {/* <td className="px-6 py-4">
+
+                        <div className="flex items-center justify-center gap-4">
+
                           <FontAwesomeIcon
                             icon={order.isHidden ? faEyeSlash : faEye}
-                            className={`cursor-pointer transition-colors ${
-                              // visibleRows[order.id] ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-900'
-                            order.isHidden ? 'text-red-500' : 'text-emerald-600'
-                            }`}
-                            onClick={() => toggleEye(order.billNum, order.id)}
+                            className={`cursor-pointer ${order.isHidden ? 'text-red-500' : 'text-emerald-600'}`}
+                            onClick={() => toggleEye(order.billNum)}
                           />
-                          <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-sm">
-                            {visibleRows[order.id] ? "Click to show details" : "Click to hide details"}
-                          </span>
+
+                          {order.status === 'collect' && (
+
+                            <button onClick={() => playAnnouncement(order.customerName)}>
+
+                              <FontAwesomeIcon
+                                icon={faMicrophone}
+                                className="text-emerald-500 hover:scale-125 transition-all"
+                              />
+
+                            </button>
+
+                          )}
+
                         </div>
 
-                        {/* Collect Audio Action (Conditional) */}
-                        {order.status === 'collect' && (
-                          <div className="relative group flex items-center justify-center">
-                            <button 
-                              onClick={() => playAnnouncement(order.customerName)}
-                              className="focus:outline-none focus:ring-2 focus:ring-emerald-200 rounded-full p-1 transition-all"
-                            >
-                              <FontAwesomeIcon 
-                                icon={faMicrophone} 
-                                className="cursor-pointer text-emerald-500 hover:text-emerald-700 transition-all hover:scale-125 active:scale-95"
-                              />
-                            </button>
-                            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                              Click to play collect order
-                            </span>
-                          </div>
-                        )}
-
-                      </div>
-                    </td>
-
+                      </td> */}
 
                       <td className="px-6 py-4">
-                        <div className="flex justify-center">
-                          {(() => {
-                            const cfg = getStatusConfig(order.status);
-                            return (
-                              <span
-                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold border ${cfg.badge}`}
-                                style={{ minWidth: '130px', justifyContent: 'center' }}
-                              >
-                                {/* Animated pulse dot for active statuses */}
-                                <span className="relative flex h-2 w-2 flex-shrink-0">
-                                  {cfg.pulse && (
-                                    <span
-                                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${cfg.dot}`}
-                                    />
-                                  )}
-                                  <span className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dot}`} />
-                                </span>
-                                <FontAwesomeIcon icon={cfg.icon} className="text-[10px]" />
-                                <span className="uppercase tracking-wide">{cfg.label}</span>
-                              </span>
-                            );
-                          })()}
+
+                        <div className="flex items-center justify-center gap-4">
+
+                          {/* Hide / Unhide */}
+                          <FontAwesomeIcon
+                            icon={order.isHidden ? faEyeSlash : faEye}
+                            className={`cursor-pointer ${order.isHidden ? 'text-red-500' : 'text-emerald-600'}`}
+                            onClick={() => toggleEye(order.billNum)}
+                          />
+
+                          {/* Voice announcement */}
+                          {order.status === 'collect' && (
+
+                            <button onClick={() => playAnnouncement(order.customerName)}>
+
+                              <FontAwesomeIcon
+                                icon={faMicrophone}
+                                className="text-blue-500 hover:scale-125 transition-all"
+                              />
+
+                            </button>
+
+                          )}
+
+                          {/* COMPLETE ORDER */}
+                          {order.status === 'collect' && (
+
+                            <button onClick={() => handleCompleteOrder(order.billNum)}>
+
+                              <FontAwesomeIcon
+                                icon={faCheckDouble}
+                                className="text-emerald-600 hover:text-green-700 hover:scale-125 transition-all cursor-pointer"
+                                title="Complete Order"
+                              />
+
+                            </button>
+
+                          )}
+
                         </div>
+
                       </td>
 
-                    </tr>
-                  );
+                      <td className="px-6 py-4">
+
+                        <div className="flex justify-center">
+
+                          {(() => {
+
+                            const cfg = getStatusConfig(order.status);
+
+                            return (
+
+                              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold border ${cfg.badge}`}>
+
+                                <span className="relative flex h-2 w-2 flex-shrink-0">
+
+                                  {cfg.pulse && (
+                                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${cfg.dot}`} />
+                                  )}
+
+                                  <span className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dot}`} />
+
+                                </span>
+
+                                <FontAwesomeIcon icon={cfg.icon} className="text-[10px]" />
+
+                                <span className="uppercase tracking-wide">{cfg.label}</span>
+
+                              </span>
+
+                            )
+
+                          })()}
+
+                        </div>
+
+                      </td>
+
+                    </motion.tr>
+
+                  )
+
                 })}
-              </tbody>
+
+              </motion.tbody>
 
             </table>
+
           </div>
+
         </div>
+
       </div>
 
     </div>

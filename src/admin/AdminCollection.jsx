@@ -64,6 +64,13 @@ export default function AdminCollection() {
   // Filter only those ready for collection
   const collectionOrders = orders.filter(o => o.status === 'collect');
 
+
+   const formatToMinutesOnly = (totalSeconds) => {
+    if (!totalSeconds && totalSeconds !== 0) return "0";
+    const minutes = Math.floor(totalSeconds / 60);
+    return `${minutes}`;
+  };
+
   return (
     <div className="bg-slate-50 min-h-screen p-6 font-sans">
       <div className="max-w-7xl mx-auto">
@@ -87,7 +94,7 @@ export default function AdminCollection() {
                 <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest">Customer Detail</th>
                 <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Time Ellapsed</th>
                 <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">picked by</th>
-                <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest">Announce</th>
+                <th className="px-2 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Announce</th>
                 <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Final Action</th>
               </tr>
             </thead>
@@ -95,7 +102,7 @@ export default function AdminCollection() {
             <tbody className="divide-y divide-slate-100">
               {collectionOrders.length > 0 ? (
                 collectionOrders.map((order) => {
-                  const minutesElapsed = getMinutesAgo(order.collectAt);
+                  const minutesElapsed = formatToMinutesOnly(order.liveTotalElapsedSecs);
                   const isDelayed = minutesElapsed > 5; // Delayed if waiting in collection > 5 mins
 
                   return (
@@ -118,19 +125,19 @@ export default function AdminCollection() {
                       </td>
 
                       <td className="px-6 py-4 text-center">
-                        <div className={`inline-flex items-center gap-2 font-mono font-black text-sm ${isDelayed ? 'text-orange-600' : 'text-slate-600'}`}>
+                        <div className={`inline-flex items-center gap-2 font-mono font-black text-sm font-medium ${isDelayed ? 'text-orange-600' : 'text-slate-600'}`}>
                           <FontAwesomeIcon icon={isDelayed ? faExclamationTriangle : faClock} className={isDelayed ? "animate-bounce" : ""} />
-                          <span>{minutesElapsed} MINS</span>
+                          <span>{minutesElapsed} min</span>
                         </div>
                       </td>
-                      <td>-</td>
+                      <td className='font-mono font-black text-sm font-semibold text-slate-600 text-center'> by {order.verifierName}</td>
 
                       {/* NEW: Announcement Column */}
-                      <td className="px-2 py-4 text-center">
+                      <td className="px-4 py-4 text-center flex items-center justify-center">
                         <button 
                           onClick={() => playAnnouncement(order.customerName)}
-                          className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center border border-blue-100"
-                          title="Call Customer"
+                          className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all  border border-blue-100"
+                          title="Announce Customer"
                         >
                           <FontAwesomeIcon icon={faMicrophone} />
                         </button>

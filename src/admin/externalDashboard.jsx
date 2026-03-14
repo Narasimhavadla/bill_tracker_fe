@@ -8,36 +8,34 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import Logo from "../assets/MediSys_LOGO.jpg"
 import axios from 'axios';
+import { motion } from "framer-motion"; // ✅ animation
 
 const ExternalDashboard = () => {
 
  const api = import.meta.env.VITE_API_BASE_URL
 
-  
-    const [order, setOrder] = useState([])
-  
-      useEffect(() => {
-        const fetchOrders = async () => {
-          try {
-            const res = await axios.get(`${api}/order/live-feed`)
-    
-            setOrder(res.data.orders)
-            console.log(res.data.orders.status)
-          }
-          catch (err) {
-            console.log(err)
-          }
-        }
-    
-        fetchOrders()
-      }, [])
+ const [order, setOrder] = useState([])
+
+ useEffect(() => {
+   const fetchOrders = async () => {
+     try {
+       const res = await axios.get(`${api}/order/live-feed`)
+       setOrder(res.data.orders)
+     }
+     catch (err) {
+       console.log(err)
+     }
+   }
+
+   fetchOrders()
+ }, [])
 
   // status priority
   const statusPriority = {
-    "Collect Order": 1,
-    "Checking": 2,
-    "Picking": 3,
-    "Billed": 4
+    "collect": 1,
+    "verifying": 2,
+    "picking": 3,
+    "billed": 4
   };
 
   // sorted orders
@@ -58,7 +56,7 @@ const ExternalDashboard = () => {
     switch (status) {
       case 'billed': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'picking': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'checking': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'verifying': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'collect': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -103,11 +101,17 @@ const ExternalDashboard = () => {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              {/* ✅ Motion tbody */}
+              <motion.tbody layout className="divide-y divide-slate-100">
 
                 {sortedOrders.map((order) => (
 
-                  <tr key={order.id} className={`hover:bg-slate-50/80 transition-colors `}>
+                  <motion.tr
+                    key={order.id}
+                    layout
+                    transition={{ duration: 0.45, ease: "easeInOut" }}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
 
                     <td className="px-6 py-1">
                       <div className="flex items-center gap-3">
@@ -153,7 +157,7 @@ const ExternalDashboard = () => {
 
                           {order.status === 'billed' && <FontAwesomeIcon icon={faCheckCircle} />}
                           {order.status === 'picking' && <FontAwesomeIcon icon={faTruckLoading} />}
-                          {order.status === 'checking' && <FontAwesomeIcon icon={faClipboardCheck} />}
+                          {order.status === 'verifying' && <FontAwesomeIcon icon={faClipboardCheck} />}
                           {order.status === 'collect' && <FontAwesomeIcon icon={faBoxOpen} />}
 
                           {order.status}
@@ -162,11 +166,11 @@ const ExternalDashboard = () => {
                       </div>
                     </td>
 
-                  </tr>
+                  </motion.tr>
 
                 ))}
 
-              </tbody>
+              </motion.tbody>
 
             </table>
 

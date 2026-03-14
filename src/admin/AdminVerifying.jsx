@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheckDouble,
@@ -9,6 +10,9 @@ import {
 import { Toaster, toast } from "sonner";
 
 const Verifying = () => {
+
+  const api = import.meta.env.VITE_API_BASE_URL
+
   const [formData, setFormData] = useState({
     billNumber: "",
     verifierId: "",
@@ -24,6 +28,7 @@ const Verifying = () => {
     billRef.current?.focus();
   }, []);
 
+  // Move to verifier input
   const handleBillKey = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -37,6 +42,7 @@ const Verifying = () => {
     }
   };
 
+  // Submit verification
   const handleVerifierKey = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -50,7 +56,7 @@ const Verifying = () => {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!formData.billNumber || !formData.verifierId) {
       toast.error("Please fill all fields");
       return;
@@ -58,30 +64,49 @@ const Verifying = () => {
 
     setIsProcessing(true);
 
-    setTimeout(() => {
-      toast.success(
-        `Verification Complete for Bill #${formData.billNumber}`
+    try {
+      const response = await axios.post(
+        `${api}/order/scan/verify`,
+        {
+          billNum: formData.billNumber,
+          empId: formData.verifierId,
+        }
       );
 
+      toast.success(
+        response.data.message ||
+          `Verification Complete for Bill #${formData.billNumber}`
+      );
+
+      // reset form
       setFormData({
         billNumber: "",
         verifierId: "",
       });
 
-      setIsProcessing(false);
-
-      // focus first input again
+      // focus bill field again
       setTimeout(() => {
         billRef.current?.focus();
-      }, 50);
-    }, 1200);
+      }, 100);
+
+    } catch (error) {
+      console.error("Verification Error:", error);
+
+      if (error.response && error.response.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Server connection error");
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
       <Toaster position="bottom-right" richColors />
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl ">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl">
 
         {/* Header */}
         <div className="bg-[#81181C] p-4 text-center relative rounded-xl">
@@ -99,12 +124,13 @@ const Verifying = () => {
           </div>
 
           <h2 className="text-2xl font-bold text-white">
-            Quality Verification
+            Verification Counter
           </h2>
 
           <p className="text-white/70 text-sm">
-            Final Audit Check
+            Final Check
           </p>
+
         </div>
 
         {/* Form */}
@@ -117,6 +143,7 @@ const Verifying = () => {
             </label>
 
             <div className="relative mt-1">
+
               <span className="absolute left-3 top-2 text-slate-400">
                 <FontAwesomeIcon icon={faSearch} />
               </span>
@@ -124,7 +151,7 @@ const Verifying = () => {
               <input
                 ref={billRef}
                 type="text"
-                placeholder="Scan bill..."
+                placeholder="Scan / Enter Bill Num"
                 value={formData.billNumber}
                 onChange={(e) =>
                   setFormData({
@@ -135,6 +162,7 @@ const Verifying = () => {
                 onKeyDown={handleBillKey}
                 className="w-full pl-10 pr-3 py-2 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-[#81181C] outline-none border-[#81181C]"
               />
+
             </div>
           </div>
 
@@ -145,6 +173,7 @@ const Verifying = () => {
             </label>
 
             <div className="relative mt-1">
+
               <span className="absolute left-3 top-2 text-slate-400">
                 <FontAwesomeIcon icon={faUserShield} />
               </span>
@@ -152,7 +181,7 @@ const Verifying = () => {
               <input
                 ref={verifierRef}
                 type="text"
-                placeholder="Enter verifier ID"
+                placeholder="Scan / Enter Emp ID"
                 value={formData.verifierId}
                 onChange={(e) =>
                   setFormData({
@@ -163,6 +192,7 @@ const Verifying = () => {
                 onKeyDown={handleVerifierKey}
                 className="w-full pl-10 pr-3 py-2 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-[#81181C] outline-none border-[#81181C]"
               />
+
             </div>
           </div>
 
@@ -176,11 +206,14 @@ const Verifying = () => {
           >
             {isProcessing ? "Verifying..." : "Approve & Release"}
           </button>
+
         </div>
 
+        {/* Footer */}
         <div className="px-6 py-2 bg-slate-50 text-center text-[9px] text-slate-400 uppercase mt-2">
           Authorized Personnel Access Only • MediSYS Logistics
         </div>
+
       </div>
     </div>
   );

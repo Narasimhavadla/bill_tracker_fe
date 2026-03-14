@@ -73,7 +73,7 @@ useEffect(() => {
     // { id: 'billing', label: 'Billing', icon: faMoneyBill, permission: 'canBill' },
     { id: 'picking', label: 'Picking', icon: faBoxesPacking, permission: 'canPick' },
     { id: 'Verifying', label: 'Verifying', icon: faCheckDouble, permission: 'canVerify' },
-    { id: 'myinsights', label: 'My Insights', icon: faChartSimple, permission: 'canViewOrders' },
+    // { id: 'myinsights', label: 'My Insights', icon: faChartSimple, permission: 'canViewOrders' },
   ];
 
 const filteredMenu = menuItems.filter(
@@ -101,7 +101,7 @@ const filteredMenu = menuItems.filter(
       case 'picking': return <AdminPicking {...sharedProps} />;
       // case 'billing': return <AdminBilling />;
       case 'Verifying': return <Verifying />;
-      case 'myinsights': return <EmployeePerformance />;
+      // case 'myinsights': return <EmployeePerformance />;
       default: return null;
     }
   };
